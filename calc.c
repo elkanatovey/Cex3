@@ -1,5 +1,5 @@
 /**
- * @file AnalyzeProtein.c
+ * @file main.c
  * @author  Elkana Tovey <elkana.tovey@mail.huji.ac.il>
  * @version 1.0
  * @date 27 Nov 2018
@@ -33,12 +33,21 @@
 #define POSTFIX_MESSAGE "Postfix: "
 #define EVALUATION_ERROR "Infix:\nPostfix:\nCan't evaluate expression\n"
 
+
+/**
+ * @brief used to contain expressions
+ * contains all arithmetic, numbers, and apperentecis
+ */
+typedef struct Expression
 /**
  * struct to hold the expressions
  */
-typedef struct Expression
 {
     int currentActive;
+    /**
+     * @brief contains the current expression
+     * type changes are known based upon flag (1,2,3,4)
+     */
     union
     {
         char openParentheses;  //flag 1
@@ -235,7 +244,7 @@ void isDigitCase(Expression operand, int value, Stack *pStack, Stack *infixStack
 }
 
 void isLeftParenthesisCase(Expression leftParenthesis, Stack *qStack, Stack *infixStack, int i,
-                            const char currentLine[] )
+                           const char currentLine[] )
 /**
  * helper function for left parenthesis case
  * @param leftParenthesis duh..
@@ -309,7 +318,7 @@ void operatorHelper(Expression operatorPop, Expression operatorPush, Expression 
         {
             pop(qStack, &currentTop);
             if(currentTop.currentActive != OPEN_PARENTHESES && operatorPrecedence
-                    (currentLine[i], currentTop))
+               (currentLine[i], currentTop))
             {
                 push(pStack, &currentTop);
             }
@@ -326,8 +335,8 @@ void operatorHelper(Expression operatorPop, Expression operatorPush, Expression 
 }
 
 void mainOperatorHelper(Expression operatorPop, Expression operatorPush, Expression currentTop,
-                         Stack *qStack, Stack *pStack, Stack *infixStack,
-                         const char currentLine[], int i)
+                        Stack *qStack, Stack *pStack, Stack *infixStack,
+                        const char currentLine[], int i)
 /**
  * helper function for operator
  * @param operatorPop expression pointer
@@ -430,7 +439,7 @@ void infixToPostFix(const char currentLine[], int size)
             continue;
         }
         if(currentLine[i] == '^' || currentLine[i] ==  '/' || currentLine[i] ==  '*'  ||
-            currentLine[i] ==  '-' || currentLine[i] == '+') // if operator
+           currentLine[i] ==  '-' || currentLine[i] == '+') // if operator
         {
             Expression operatorPush = {},  operatorPop = {}, currentTop = {};
             mainOperatorHelper(operatorPop, operatorPush, currentTop, qStack, pStack,
@@ -453,7 +462,7 @@ int main()
             break;
         }
         inputBuffer[strcspn(inputBuffer, "\r\n")] = 0;
-        int size = (int)strnlen(inputBuffer, MAX_LINE_LENGTH);
+        int size = (int)strlen(inputBuffer);
         infixToPostFix(inputBuffer, size);
     }
 }
