@@ -15,7 +15,6 @@
  */
 #include <stdio.h>
 #include "stack.h"
-#include "stack.c"
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
@@ -65,7 +64,6 @@ int operatorPrecedence(char currentOperand, Expression possibleOperand )
  * @return 1 if the precedence of currentOperand <= possibleOperand, else 0
  */
 {
-    assert(possibleOperand.currentActive == OPERATOR);
     if(possibleOperand.operator == '^')
     {
         return 1;

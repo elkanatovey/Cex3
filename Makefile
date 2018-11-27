@@ -4,7 +4,7 @@ LDFLAGS = -lm
 
 
 # add your .c files here  (no file suffixes)
-CLASSES = stack main
+CLASSES = stack calc
 
 # Prepare object and source file list using pattern substitution func.
 OBJS = $(patsubst %, %.o,  $(CLASSES))
@@ -16,7 +16,7 @@ all: $(OBJS) libstack.a
 %.o: %.c
 	$(CC) $(CCFLAGS) $*.c
 
-LIBOBJECTS = stack.o
+LIBOBJECTS = stack.o calc.o
 
 libstack.a: ${LIBOBJECTS}
 	ar rcs libstack.a ${LIBOBJECTS}
