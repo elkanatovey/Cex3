@@ -7,9 +7,14 @@
 Stack* stackAlloc(size_t elementSize)
 {
   Stack* stack = (Stack*)malloc(sizeof(Stack));
-  stack->_top = NULL;
-  stack->_elementSize = elementSize;
-  return stack;
+  if(stack)
+  {
+      stack->_top = NULL;
+      stack->_elementSize = elementSize;
+      return stack;
+  }
+  else
+      exit(1);
 }
 
 void freeStack(Stack** stack)
@@ -35,10 +40,15 @@ void push(Stack* stack, void *data)
 {
   //you should check allocation success
   Node* node = (Node*)malloc(sizeof(Node));
-  node->_data = malloc(stack->_elementSize);
-  memcpy(node->_data, data, stack->_elementSize);
-  node->_next = stack->_top;
-  stack->_top = node;
+  if(node)
+  {
+      node->_data = malloc(stack->_elementSize);
+      memcpy(node->_data, data, stack->_elementSize);
+      node->_next = stack->_top;
+      stack->_top = node;
+  }
+  else
+      exit(1);
 }
 
 void pop(Stack* stack, void *headData) 

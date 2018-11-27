@@ -452,15 +452,16 @@ void infixToPostFix(const char currentLine[], int size)
 int main()
 {
     char inputBuffer[MAX_LINE_LENGTH] = {0};
-    while(*fgets(inputBuffer, MAX_LINE_LENGTH, stdin) != EOF)
+    while(fgets(inputBuffer, MAX_LINE_LENGTH, stdin) != NULL)
     {
         if(inputBuffer[0] == '\n' || inputBuffer[0] == ' ' || inputBuffer[0] == '\0')
         {
-            printf(EVALUATION_ERROR);
+            fprintf(stderr, EVALUATION_ERROR);
             break;
         }
         inputBuffer[strcspn(inputBuffer, "\r\n")] = 0;
         int size = (int)strlen(inputBuffer);
         infixToPostFix(inputBuffer, size);
     }
+    return 0;
 }
