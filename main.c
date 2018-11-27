@@ -3,6 +3,7 @@
 #include "stack.c"
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define MAX_LINE_LENGTH 101
 #define OPERATORS = ('^' | '/' | '*'  | '-' | '+')
@@ -10,6 +11,7 @@
 #define CLOSE_PARENTHESES 2
 #define OPERATOR 3
 #define NUMBER 4
+#define DIVISION_ERROR "Division by 0!"
 
 /**
  * struct to hold the sequences as pointers
@@ -74,15 +76,70 @@ void switchStack(Stack *notSortedP, Stack *sortedP)
 }
 
 
-//int postFixCalculator(Stack *sortedP)
-//{
-//    Expression currentExpression;
-//    Stack *calculatorStack = stackAlloc(sizeof(Expression));
-//    while (!isEmptyStack(sortedP))
-//    {
-//        pop()
-//    }
-//}
+int calculateMath(int a, int b, char operator)
+/**
+ * performs calcualtions between two operands, with a given operator
+ * @param a operand 1
+ * @param b operand 2
+ * @param operator given operator
+ * @return the result
+ */
+{
+    int result = 0;
+    if(operator == '/')
+    {
+        if(a == 0)
+        {
+            fprintf(stderr, DIVISION_ERROR);
+            exit(1);
+        }
+        result = b / a;
+    }
+    if(operator == '*')
+    {
+        result = b*a;
+
+    }
+    if(operator == '-')
+    {
+        result = b - a;
+    }
+    if(operator == '+')
+    {
+        result = b + a;
+    }
+    if(operator == '^')
+    {
+        result = (int)pow(b, a);
+    }
+    return result;
+}
+
+int postFixCalculator(Stack *sortedP)
+{
+    Expression currentExpression;
+    int *aExpression;
+    int *bExpression;
+    int result;
+    Stack *calculatorStack = stackAlloc(sizeof(int));
+    while (!isEmptyStack(sortedP))
+    {
+        pop(sortedP, &currentExpression);
+        if(currentExpression.currentActive == NUMBER)
+        {
+            push(calculatorStack, &currentExpression.number);
+        }
+        else
+        {
+            pop(calculatorStack, &aExpression);
+            pop(calculatorStack, &bExpression);
+            result = calculateMath(*aExpression, *bExpression, currentExpression.operator);
+            push(calculatorStack, &result);
+        }
+    }
+    pop(calculatorStack, &result);
+    printf("%d", result);
+}
 
 int convertToInt(const char currentLine[], int i, int size, int *value)
 /**
@@ -225,6 +282,7 @@ int infixToPostFix(const char currentLine[], int size)
     switchStack(infixStack, sortedInfix);
     freeStack(&pStack);
     freeStack(&infixStack);
+    postFixCalculator(sortedP);
 }
 
 
