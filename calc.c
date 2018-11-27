@@ -31,7 +31,7 @@
 #define INFIX_NUMBER " %d "
 #define INFIX_OTHERS "%c"
 #define POSTFIX_MESSAGE "Postfix: "
-#define EVALUATION_ERROR "Infix:\nPostfix:\nCan't evaluate expression"
+#define EVALUATION_ERROR "Infix:\nPostfix:\nCan't evaluate expression\n"
 
 /**
  * struct to hold the expressions
@@ -453,6 +453,7 @@ int main()
             break;
         }
         inputBuffer[strcspn(inputBuffer, "\r\n")] = 0;
-        infixToPostFix(inputBuffer, (int)strnlen(inputBuffer, MAX_LINE_LENGTH));
+        int size = (int)strnlen(inputBuffer, MAX_LINE_LENGTH);
+        infixToPostFix(inputBuffer, size);
     }
 }
