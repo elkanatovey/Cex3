@@ -2,6 +2,7 @@
 #include "stack.h"
 #include "stack.c"
 #include <string.h>
+#include <ctype.h>
 
 #define MAX_LINE_LENGTH 101
 #define OPERATORS = ('^' | '/' | '*'  | '-' | '+')
@@ -25,32 +26,112 @@ typedef struct Expression
     };
 }Expression;
 
-
-int postFixCalculator(Stack *sortedP)
+int operatorPrecedence(char currentOperand, Expression possibleOperand )
+/**
+ *
+ * @param currentOperand current operand being evaluated
+ * @param possibleOperand operand at stack top
+ * @return 1 if the precedence of currentOperand <= possibleOperand, else 0
+ */
 {
-    Expression currentExpression;
-    Stack *calculatorStack = stackAlloc(sizeof(Expression));
-    while (!isEmptyStack(sortedP))
+    assert(possibleOperand.currentActive != OPERATOR);
+    if(possibleOperand.operator == '^')
     {
-        pop()
+        return 1;
     }
+    if(possibleOperand.operator == '/' || possibleOperand.operator == '*')
+    {
+        if(currentOperand != '^')
+        {
+            return 1;
+        }
+    }
+    if(possibleOperand.operator == '-' || possibleOperand.operator == '+')
+    {
+        if(currentOperand == '-' || currentOperand == '+')
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 
-int infixToPostFix(char currentLine[], int size)
+void switchStack(Stack *notSortedP, Stack *sortedP)
+/**
+ * switch a stack around from back to front
+ * @param notSortedP the start stack
+ * @param sortedP the finish stack
+ */
+{
+    Expression currentItem;
+    while (!isEmptyStack(notSortedP))
+    {
+        pop(notSortedP, &currentItem);
+        push(sortedP, &currentItem);
+    }
+
+}
+
+
+//int postFixCalculator(Stack *sortedP)
+//{
+//    Expression currentExpression;
+//    Stack *calculatorStack = stackAlloc(sizeof(Expression));
+//    while (!isEmptyStack(sortedP))
+//    {
+//        pop()
+//    }
+//}
+
+int convertToInt(const char currentLine[], int i, int size, int *value)
+/**
+ * convert the next letters to their int value,
+ * @param currentLine the current buffer
+ * @param i the index to start
+ * @param size buffersize
+ * @param value pointer to the value we are summing
+ * @return the new index
+ */
+{
+    int k;
+    for(k = i; k < size; k++)
+    {
+        if (isdigit(currentLine[k]))
+        {
+            *value = *value*10 + currentLine[k] - '0';
+        }
+        else
+        {
+            return k;
+        }
+    }
+    return k;
+}
+
+int infixToPostFix(const char currentLine[], int size)
 {
     int i;
     Stack *qStack = stackAlloc(sizeof(Expression));
     Stack *pStack = stackAlloc(sizeof(Expression));
+    Stack *infixStack = stackAlloc(sizeof(Expression));
     for(i = 0; i<size; i++)
     {
 
-        if(currentLine[i] == )  //found operand (number)
+        if(isdigit(currentLine[i]))  //found operand (number)
         {
+            int value = 0;
+            int *valuePointer = &value;
+            i = convertToInt(currentLine, i, size, valuePointer);
             Expression operand;
             operand.currentActive = NUMBER;
-            operand.number = currentLine[i];
+            operand.number = value;
+//            int a = isEmptyStack(pStack);
+//            printf("%d\n", a);
             push(pStack, &operand);
+//            a = isEmptyStack(pStack);
+//            printf("%d\n", a);
+            push(infixStack, &operand);
             continue;
         }
         if(currentLine[i] == '(')  // left parenthesis
@@ -59,30 +140,40 @@ int infixToPostFix(char currentLine[], int size)
             leftParenthesis.currentActive = OPEN_PARENTHESES;
             leftParenthesis.openParentheses = currentLine[i];
             push(qStack, &leftParenthesis);
+            push(infixStack, &leftParenthesis);
             continue;
         }
         if(currentLine[i] == ')')  // right parenthesis
         {
+            Expression close;
+            close.currentActive = CLOSE_PARENTHESES;
+            close.closeParentheses = currentLine[i];
+            push(infixStack, &close);
             Expression popped;
-            while((!isEmptyStack(qStack)))  // push all items aside from ( to pStack
+            while(!isEmptyStack(qStack))  // push all items aside from ( to pStack
             {
                 pop(qStack, &popped);
                 if(popped.currentActive != OPEN_PARENTHESES)
                 {
                     push(pStack, &popped);
                 }
+                else  // is open parenthesis
+                {
+                    break;
+                }
             }
             continue;
         }
 
 
-        if(currentLine[i] == ('^' | '/' | '*'  | '-' | '+')) // if operator
+        if(currentLine[i] == '^' || currentLine[i] ==  '/' || currentLine[i] ==  '*'  ||
+            currentLine[i] ==  '-' || currentLine[i] == '+') // if operator
         {
             Expression operatorPush;
             if(isEmptyStack(qStack))
             {
                 operatorPush.currentActive = OPERATOR;
-                operatorPush.openParentheses = currentLine[i];
+                operatorPush.operator = currentLine[i];
                 push(qStack, &operatorPush);
             }
             else
@@ -93,16 +184,17 @@ int infixToPostFix(char currentLine[], int size)
                 if (operatorPop.currentActive == OPEN_PARENTHESES)
                 {
                     operatorPush.currentActive = OPERATOR;
-                    operatorPush.openParentheses = currentLine[i];
+                    operatorPush.operator = currentLine[i];
                     push(qStack, &operatorPush);
                 }
                 else
                 {
-                    while(isEmptyStack(qStack))
+                    while(!isEmptyStack(qStack))
                     {
                         Expression currentTop;
                         pop(qStack, &currentTop);
-                        if(currentTop.currentActive != OPEN_PARENTHESES && )
+                        if(currentTop.currentActive != OPEN_PARENTHESES && operatorPrecedence
+                        (currentLine[i], currentTop))
                         {
                             push(pStack, &currentTop);
                         }
@@ -112,20 +204,27 @@ int infixToPostFix(char currentLine[], int size)
                             break;
                         }
                     }
-                    Expression newOperator;
-                    newOperator.currentActive = OPERATOR;
-                    newOperator.operator = currentLine[i];
+                    operatorPush.currentActive = OPERATOR;
+                    operatorPush.operator = currentLine[i];
+                    push(qStack, &operatorPush);
+                    push(infixStack, &operatorPush);
                 }
             }
         }
     }
-    while(isEmptyStack(qStack))
+    while(!isEmptyStack(qStack))
     {
         Expression expressionToPop;
         pop(qStack, &expressionToPop);
         push(pStack, &expressionToPop);
     }
     freeStack(&qStack);
+    Stack *sortedP = stackAlloc(sizeof(Expression));;
+    Stack *sortedInfix = stackAlloc(sizeof(Expression));;
+    switchStack(pStack, sortedP);
+    switchStack(infixStack, sortedInfix);
+    freeStack(&pStack);
+    freeStack(&infixStack);
 }
 
 
