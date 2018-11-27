@@ -1,3 +1,18 @@
+/**
+ * @file AnalyzeProtein.c
+ * @author  Elkana Tovey <elkana.tovey@mail.huji.ac.il>
+ * @version 1.0
+ * @date 27 Nov 2018
+ * @brief System to calculate mathematics in postfix form
+ *
+ * @section LICENSE
+ * This program is an assignment for course 67136; bla bla bla...
+ * @section DESCRIPTION
+ * The system calculates to operands and an operator and displays the result in postfix form
+ * Input  : math from stdin
+ * Process: parse the expression
+ * Output : the answer and the ways of displaying the input
+ */
 #include <stdio.h>
 #include "stack.h"
 #include "stack.c"
@@ -6,14 +21,17 @@
 #include <math.h>
 
 #define MAX_LINE_LENGTH 101
-#define OPERATORS = ('^' | '/' | '*'  | '-' | '+')
 #define OPEN_PARENTHESES 1
 #define CLOSE_PARENTHESES 2
 #define OPERATOR 3
 #define NUMBER 4
 #define DIVISION_ERROR "Division by 0!"
 #define SUM_MESSAGE "The value is %d\n"
-
+#define INFIX_MESSAGE "Infix: "
+#define INFIX_NUMBER " %d "
+#define INFIX_OTHERS "%c"
+#define POSTFIX_MESSAGE "Postfix: "
+#define EVALUATION_ERROR "Infix:\nPostfix:\nCan't evaluate expression"
 
 /**
  * struct to hold the expressions
@@ -38,7 +56,7 @@ int operatorPrecedence(char currentOperand, Expression possibleOperand )
  * @return 1 if the precedence of currentOperand <= possibleOperand, else 0
  */
 {
-    assert(possibleOperand.currentActive != OPERATOR);
+    assert(possibleOperand.currentActive == OPERATOR);
     if(possibleOperand.operator == '^')
     {
         return 1;
@@ -117,32 +135,44 @@ int calculateMath(int a, int b, char operator)
     return result;
 }
 
+void printHelper(Expression current)
+/**
+ * printer helper
+ * @param current the current expression to print
+ */
+{
+    if(current.currentActive == NUMBER)
+    {
+        printf(INFIX_NUMBER, current.number);
+    }
+    if(current.currentActive == OPERATOR)
+    {
+        printf(INFIX_OTHERS, current.operator);
+    }
+    if(current.currentActive == OPEN_PARENTHESES)
+    {
+        printf(INFIX_OTHERS, current.openParentheses);
+    }
+    if(current.currentActive == CLOSE_PARENTHESES)
+    {
+        printf(INFIX_OTHERS, current.closeParentheses);
+    }
+}
+
+
 void postFixCalculator(Stack *sortedP)
 /**
  * postfix algorithm for calculations
  * @param sortedP sorted postfix
  */
 {
-//    Expression a;
-//    while (!isEmptyStack(sortedP))
-//    {
-//        pop(sortedP, &a);
-//        if(a.currentActive == NUMBER)
-//        {
-//            printf("%d\n", a.number);
-//        } else
-//        {
-//            printf("%c\n", a.operator);
-//        }
-//    }
-    Expression currentExpression;
-    Expression aExpression;
-    Expression bExpression;
-    Expression sum;
+    Expression currentExpression, aExpression, bExpression, sum;
     Stack *calculatorStack = stackAlloc(sizeof(Expression));
+    printf(POSTFIX_MESSAGE);
     while (!isEmptyStack(sortedP))
     {
         pop(sortedP, &currentExpression);
+        printHelper(currentExpression);
         if(currentExpression.currentActive == NUMBER)
         {
             push(calculatorStack, &currentExpression);
@@ -157,6 +187,7 @@ void postFixCalculator(Stack *sortedP)
             push(calculatorStack, &sum);
         }
     }
+    printf("\n");
     pop(calculatorStack, &sum);
     printf(SUM_MESSAGE, sum.number);
     freeStack(&calculatorStack);
@@ -251,7 +282,7 @@ void isRightParenthesisCase(Expression close, Expression popped, const char curr
 }
 
 void operatorHelper(Expression operatorPop, Expression operatorPush, Expression currentTop, Stack
-                    *qStack, Stack *pStack, Stack *infixStack, const char currentLine[], int i)
+                    *qStack, Stack *pStack, const char currentLine[], int i)
 /**
  * helper function for operator
  * @param operatorPop expression pointer
@@ -291,7 +322,6 @@ void operatorHelper(Expression operatorPop, Expression operatorPush, Expression 
         operatorPush.currentActive = OPERATOR;
         operatorPush.operator = currentLine[i];
         push(qStack, &operatorPush);
-        push(infixStack, &operatorPush);
     }
 }
 
@@ -310,19 +340,34 @@ void mainOperatorHelper(Expression operatorPop, Expression operatorPush, Express
  * @param i buffer index
  */
 {
+    operatorPush.currentActive = OPERATOR;
+    operatorPush.operator = currentLine[i];
+    push(infixStack, &operatorPush);
     if(isEmptyStack(qStack))
     {
-        operatorPush.currentActive = OPERATOR;
-        operatorPush.operator = currentLine[i];
         push(qStack, &operatorPush);
     }
     else
     {
-        operatorHelper(operatorPop, operatorPush, currentTop, qStack, pStack, infixStack,
-                       currentLine, i);
+        operatorHelper(operatorPop, operatorPush, currentTop, qStack, pStack, currentLine, i);
     }
 }
 
+void printInfix(Stack *sortedInfix)
+/**
+ * print the infix version of an expression
+ * @param sortedInfix infix stack in proper order
+ */
+{
+    Expression current;
+    printf(INFIX_MESSAGE);
+    while(!isEmptyStack(sortedInfix))
+    {
+        pop(sortedInfix, &current);
+        printHelper(current);
+    }
+    printf("\n");
+}
 
 void prepareCalculations(Stack *qStack, Stack *pStack, Stack *infixStack)
 /**
@@ -344,9 +389,11 @@ void prepareCalculations(Stack *qStack, Stack *pStack, Stack *infixStack)
     freeStack(&qStack);
     switchStack(pStack, sortedP);
     switchStack(infixStack, sortedInfix);
+    printInfix(sortedInfix);
     freeStack(&pStack);
     freeStack(&infixStack);
     postFixCalculator(sortedP);
+    freeStack(&sortedInfix);
 }
 
 void infixToPostFix(const char currentLine[], int size)
@@ -357,16 +404,14 @@ void infixToPostFix(const char currentLine[], int size)
  */
 {
     int i;
-    Stack *qStack = stackAlloc(sizeof(Expression));
-    Stack *pStack = stackAlloc(sizeof(Expression));
+    Stack *qStack = stackAlloc(sizeof(Expression)), *pStack = stackAlloc(sizeof(Expression));
     Stack *infixStack = stackAlloc(sizeof(Expression));
     for(i = 0; i<size; i++)
     {
 
         if(isdigit(currentLine[i]))  //found operand (number)
         {
-            int value = 0;
-            int *valuePointer = &value;
+            int value = 0, *valuePointer = &value;
             i = convertToInt(currentLine, i, size, valuePointer);
             Expression operand = {};
             isDigitCase(operand, value, pStack, infixStack);
@@ -380,17 +425,14 @@ void infixToPostFix(const char currentLine[], int size)
         }
         if(currentLine[i] == ')')  // right parenthesis
         {
-            Expression close = {};
-            Expression popped = {};
+            Expression close = {}, popped = {};
             isRightParenthesisCase(close, popped, currentLine, i, qStack, pStack, infixStack);
             continue;
         }
         if(currentLine[i] == '^' || currentLine[i] ==  '/' || currentLine[i] ==  '*'  ||
             currentLine[i] ==  '-' || currentLine[i] == '+') // if operator
         {
-            Expression operatorPush = {};
-            Expression operatorPop = {};
-            Expression currentTop = {};
+            Expression operatorPush = {},  operatorPop = {}, currentTop = {};
             mainOperatorHelper(operatorPop, operatorPush, currentTop, qStack, pStack,
                                infixStack, currentLine, i);
         }
@@ -405,13 +447,12 @@ int main()
     char inputBuffer[MAX_LINE_LENGTH] = {0};
     while(*fgets(inputBuffer, MAX_LINE_LENGTH, stdin) != EOF)
     {
-        if(inputBuffer[0] == '\n')
+        if(inputBuffer[0] == '\n' || inputBuffer[0] == ' ' || inputBuffer[0] == '\0')
         {
-            printf("Infix:\nPostfix:\nCan't evaluate expression");
+            printf(EVALUATION_ERROR);
             break;
         }
         inputBuffer[strcspn(inputBuffer, "\r\n")] = 0;
         infixToPostFix(inputBuffer, (int)strnlen(inputBuffer, MAX_LINE_LENGTH));
     }
-
 }
